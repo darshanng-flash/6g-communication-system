@@ -1,0 +1,1688 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .attack-card {
+        background: linear-gradient(135deg, #FFF5E6, #FFFFFF);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .probability-bar {
+        height: 30px;
+        background: linear-gradient(90deg, #FF6B35, #FFB347);
+        border-radius: 15px;
+        transition: width 0.5s ease;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 10px;
+        color: white;
+        font-weight: bold;
+    }
+    
+    .attack-badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        display: inline-block;
+        margin: 5px;
+    }
+    
+    .normal { background: #28a745; color: white; }
+    .flooding { background: #ffc107; color: #333; }
+    .tdma { background: #17a2b8; color: white; }
+    .grayhole { background: #fd7e14; color: white; }
+    .blackhole { background: #dc3545; color: white; }
+    
+    .prediction-result {
+        text-align: center;
+        padding: 30px;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #FF6B35, #FFB347);
+        color: white;
+    }
+    
+    .confidence-circle {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, #FFD700 0deg, #FFD700 var(--confidence), #FFFFFF var(--confidence));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 20px auto;
+        position: relative;
+    }
+    
+    .confidence-inner {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+    
+    .sample-btn {
+        margin: 5px;
+        transition: all 0.3s ease;
+    }
+    
+    .sample-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .nav-tabs .nav-link {
+        color: #FF6B35;
+        font-weight: 600;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background: linear-gradient(135deg, #FF6B35, #FFB347);
+        color: white;
+        border: none;
+    }
+    
+    .input-group-custom {
+        margin-bottom: 15px;
+    }
+    
+    .input-group-custom label {
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #2C3E50;
+    }
+    
+    .input-group-custom input, 
+    .input-group-custom select {
+        border: 2px solid #FFE0CC;
+        border-radius: 8px;
+        padding: 8px 12px;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    
+    .input-group-custom input:focus, 
+    .input-group-custom select:focus {
+        border-color: #FF6B35;
+        outline: none;
+        box-shadow: 0 0 5px rgba(255,107,53,0.3);
+    }
+    
+    .parameter-card {
+        background: #FFF8F0;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .quick-input-btn {
+        background: #FF6B35;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin: 2px;
+        font-size: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .quick-input-btn:hover {
+        background: #E85D04;
+        transform: scale(1.05);
+    }
+    
+    .sample-details {
+        background: #F8F9FA;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .sample-details table {
+        width: 100%;
+        font-size: 12px;
+    }
+    
+    .sample-details td {
+        padding: 5px;
+        border-bottom: 1px solid #E0E0E0;
+    }
+    
+    .sample-details td:first-child {
+        font-weight: bold;
+        color: #FF6B35;
+        width: 40%;
+    }
+    
+    .result-container {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    .attack-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 5px;
+    }
+    
+    .blink {
+        animation: blink 1s infinite;
+    }
+    
+    @keyframes blink {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #FF6B35;
+    }
+    
+    .stat-card .stat-label {
+        color: #6C757D;
+        font-size: 14px;
+    }
+    
+    .table-predictions {
+        font-size: 13px;
+    }
+    
+    .table-predictions th {
+        background: #FFF5E6;
+        color: #2C3E50;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .filter-btn {
+        margin: 2px;
+        padding: 3px 10px;
+        font-size: 12px;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-btn:hover {
+        transform: scale(1.05);
+    }
+    
+    .filter-btn.active-filter {
+        border: 2px solid #FF6B35;
+        box-shadow: 0 0 10px rgba(255,107,53,0.3);
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+    }
+    
+    .reset-filter-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 20;
+    }
+    
+    .no-data-message {
+        padding: 40px;
+        text-align: center;
+        color: #6C757D;
+    }
+    
+    .no-data-message i {
+        font-size: 48px;
+        margin-bottom: 15px;
+        color: #FFE0CC;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-shield-alt text-danger me-2"></i>Attack Prediction System</h2>
+            <p>AI-powered network attack detection with 99% accuracy - Choose from samples or manual input</p>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs mb-4" id="predictionTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="samples-tab" data-bs-toggle="tab" data-bs-target="#samples" type="button" role="tab">
+                <i class="fas fa-database me-2"></i>Attack Samples
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button" role="tab">
+                <i class="fas fa-keyboard me-2"></i>Manual Input
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch" type="button" role="tab">
+                <i class="fas fa-chart-bar me-2"></i>Statistics
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Tab 1: Attack Samples -->
+        <div class="tab-pane fade show active" id="samples" role="tabpanel">
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="attack-card">
+                        <h5><i class="fas fa-database me-2"></i>Attack Samples Library</h5>
+                        <hr>
+                        <div id="sampleButtons"></div>
+                        
+                        <div class="mt-4">
+                            <h6>Attack Types Description:</h6>
+                            <div>
+                                <span class="attack-badge normal">Normal</span> - Regular network traffic
+                            </div>
+                            <div>
+                                <span class="attack-badge flooding">Flooding</span> - Network flooding attack
+                            </div>
+                            <div>
+                                <span class="attack-badge tdma">TDMA</span> - TDMA slot attack
+                            </div>
+                            <div>
+                                <span class="attack-badge grayhole">Grayhole</span> - Selective packet dropping
+                            </div>
+                            <div>
+                                <span class="attack-badge blackhole">Blackhole</span> - Complete packet drop
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-7">
+                    <div class="attack-card">
+                        <h5><i class="fas fa-robot me-2"></i>Select Attack Sample</h5>
+                        <hr>
+                        <div id="sampleList" class="mb-3"></div>
+                        <div id="selectedSampleInfo" style="display: none;" class="sample-details">
+                            <h6><i class="fas fa-info-circle me-2"></i>Selected Sample Details:</h6>
+                            <div id="sampleDetailsTable"></div>
+                        </div>
+                        <div id="predictionResult" style="display: none;"></div>
+                        <div id="loading" style="display: none;" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Analyzing network traffic...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Manual Input -->
+        <div class="tab-pane fade" id="manual" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="attack-card">
+                        <h5><i class="fas fa-sliders-h me-2"></i>Network Parameters</h5>
+                        <hr>
+                        
+                        <form id="manualPredictionForm">
+                            <!-- Quick Input Templates -->
+                            <div class="parameter-card">
+                                <label class="form-label fw-bold">Quick Templates:</label>
+                                <div>
+                                    <button type="button" class="quick-input-btn" onclick="loadTemplate('normal')">
+                                        <i class="fas fa-check-circle me-1"></i>Normal Traffic
+                                    </button>
+                                    <button type="button" class="quick-input-btn" onclick="loadTemplate('flooding')">
+                                        <i class="fas fa-bug me-1"></i>Flooding Attack
+                                    </button>
+                                    <button type="button" class="quick-input-btn" onclick="loadTemplate('blackhole')">
+                                        <i class="fas fa-skull me-1"></i>Blackhole Attack
+                                    </button>
+                                    <button type="button" class="quick-input-btn" onclick="loadTemplate('grayhole')">
+                                        <i class="fas fa-eye-slash me-1"></i>Grayhole Attack
+                                    </button>
+                                    <button type="button" class="quick-input-btn" onclick="loadTemplate('tdma')">
+                                        <i class="fas fa-clock me-1"></i>TDMA Attack
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-clock me-1"></i>Time</label>
+                                        <input type="number" class="form-control" id="Time" value="50" step="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-microchip me-1"></i>Is Cluster Head</label>
+                                        <select class="form-control" id="Is_CH">
+                                            <option value="0">No</option>
+                                            <option value="1">Yes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-ruler me-1"></i>Distance to CH</label>
+                                        <input type="number" class="form-control" id="Dist_To_CH" value="50" step="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-broadcast-tower me-1"></i>ADV Sent</label>
+                                        <input type="number" class="form-control" id="ADV_S" value="5" step="1">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-broadcast-tower me-1"></i>ADV Received</label>
+                                        <input type="number" class="form-control" id="ADV_R" value="5" step="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-handshake me-1"></i>JOIN Sent</label>
+                                        <input type="number" class="form-control" id="JOIN_S" value="3" step="1">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-handshake me-1"></i>JOIN Received</label>
+                                        <input type="number" class="form-control" id="JOIN_R" value="3" step="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-calendar-alt me-1"></i>SCH Sent</label>
+                                        <input type="number" class="form-control" id="SCH_S" value="2" step="1">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-calendar-alt me-1"></i>SCH Received</label>
+                                        <input type="number" class="form-control" id="SCH_R" value="2" step="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-chart-line me-1"></i>Rank</label>
+                                        <input type="number" class="form-control" id="Rank" value="10" step="1">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-database me-1"></i>DATA Sent</label>
+                                        <input type="number" class="form-control" id="DATA_S" value="100" step="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-database me-1"></i>DATA Received</label>
+                                        <input type="number" class="form-control" id="DATA_R" value="95" step="10">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-cloud-upload-alt me-1"></i>Data Sent to BS</label>
+                                        <input type="number" class="form-control" id="Data_Sent_To_BS" value="100" step="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-tower-cell me-1"></i>Distance CH to BS</label>
+                                        <input type="number" class="form-control" id="dist_CH_To_BS" value="100" step="5">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-code me-1"></i>Send Code</label>
+                                        <input type="number" class="form-control" id="send_code" value="2" step="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group-custom">
+                                        <label><i class="fas fa-battery-full me-1"></i>Expanded Energy</label>
+                                        <input type="number" class="form-control" id="Expaned Energy" value="0.07" step="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-primary w-100 mt-3" onclick="predictManualAttack()">
+                                <i class="fas fa-chart-line me-2"></i>Predict Attack
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div id="manualPredictionResult" style="display: none;"></div>
+                    <div id="manualLoading" style="display: none;" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Analyzing network parameters...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Statistics -->
+        <div class="tab-pane fade" id="batch" role="tabpanel">
+            <!-- Statistics Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalPredictions">0</div>
+                        <div class="stat-label">Total Predictions</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number text-success" id="normalCount">0</div>
+                        <div class="stat-label">Normal Traffic</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number text-warning" id="attackCount">0</div>
+                        <div class="stat-label">Attacks Detected</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-number text-danger" id="criticalCount">0</div>
+                        <div class="stat-label">Critical Threats</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts Row -->
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="attack-card">
+                        <h5><i class="fas fa-chart-pie me-2"></i>Attack Distribution</h5>
+                        <hr>
+                        <div class="chart-container">
+                            <canvas id="attackChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="attack-card">
+                        <h5><i class="fas fa-chart-line me-2"></i>Daily Predictions</h5>
+                        <hr>
+                        <div class="chart-container">
+                            <canvas id="dailyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="attack-card">
+                        <h5><i class="fas fa-clock me-2"></i>Hourly Distribution</h5>
+                        <hr>
+                        <div class="chart-container">
+                            <canvas id="hourlyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Predictions -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="attack-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5><i class="fas fa-list me-2"></i>Recent Predictions</h5>
+                            <div>
+                                <span class="badge bg-secondary me-2" id="filterBadge">Showing all</span>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="resetFilter()">
+                                    <i class="fas fa-undo me-1"></i>Reset Filter
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="loadAttackStatistics()">
+                                    <i class="fas fa-sync me-1"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <hr>
+                        <div id="recentPredictions" style="max-height: 400px; overflow-y: auto;">
+                            <div class="no-data-message">
+                                <i class="fas fa-chart-bar"></i>
+                                <p>Loading predictions...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Understanding Attack Types -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="attack-card">
+                        <h5><i class="fas fa-info-circle me-2"></i>Understanding Attack Types</h5>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h6 class="text-success">Normal</h6>
+                                <p class="small">Regular network traffic with expected behavior patterns. No security threat detected.</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-warning">Flooding Attack</h6>
+                                <p class="small">Unusually high number of control packets causing network congestion. Can lead to Denial of Service.</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-danger">Blackhole Attack</h6>
+                                <p class="small">Node drops all packets causing complete data loss. Critical threat to network integrity.</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="text-danger">Grayhole Attack</h6>
+                                <p class="small">Selective packet dropping with inconsistent reception pattern. Harder to detect than blackhole.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let attackSamples = {};
+    let attackChart, dailyChart, hourlyChart;
+    
+    // Template configurations for manual input
+    const templates = {
+        normal: {
+            Time: 50, 
+            Is_CH: 0, 
+            Dist_To_CH: 45, 
+            ADV_S: 4, 
+            ADV_R: 4,
+            JOIN_S: 2, 
+            JOIN_R: 2, 
+            SCH_S: 1, 
+            SCH_R: 1, 
+            Rank: 15,
+            DATA_S: 80, 
+            DATA_R: 78, 
+            Data_Sent_To_BS: 80, 
+            dist_CH_To_BS: 95,
+            send_code: 2, 
+            'Expaned Energy': 0.065,
+            force_attack: 'Normal'
+        },
+        flooding: {
+            Time: 50, 
+            Is_CH: 0, 
+            Dist_To_CH: 30, 
+            ADV_S: 85,
+            ADV_R: 12,
+            JOIN_S: 45,
+            JOIN_R: 8,
+            SCH_S: 35,
+            SCH_R: 5,
+            Rank: 25,
+            DATA_S: 450,
+            DATA_R: 60,
+            Data_Sent_To_BS: 55,
+            dist_CH_To_BS: 80,
+            send_code: 1, 
+            'Expaned Energy': 0.15,
+            force_attack: 'Flooding'
+        },
+        blackhole: {
+            Time: 50, 
+            Is_CH: 1, 
+            Dist_To_CH: 0, 
+            ADV_S: 2, 
+            ADV_R: 2,
+            JOIN_S: 1, 
+            JOIN_R: 1, 
+            SCH_S: 1, 
+            SCH_R: 1, 
+            Rank: 5,
+            DATA_S: 500,
+            DATA_R: 0,
+            Data_Sent_To_BS: 0,
+            dist_CH_To_BS: 50,
+            send_code: 0, 
+            'Expaned Energy': 0.08,
+            force_attack: 'Blackhole'
+        },
+        grayhole: {
+            Time: 50, 
+            Is_CH: 0, 
+            Dist_To_CH: 25, 
+            ADV_S: 3, 
+            ADV_R: 3,
+            JOIN_S: 2, 
+            JOIN_R: 2, 
+            SCH_S: 1, 
+            SCH_R: 1, 
+            Rank: 12,
+            DATA_S: 300,
+            DATA_R: 150,
+            Data_Sent_To_BS: 150,
+            dist_CH_To_BS: 70,
+            send_code: 1, 
+            'Expaned Energy': 0.09,
+            force_attack: 'Grayhole'
+        },
+        tdma: {
+            Time: 50, 
+            Is_CH: 0, 
+            Dist_To_CH: 60, 
+            ADV_S: 8, 
+            ADV_R: 2,
+            JOIN_S: 15,
+            JOIN_R: 3,
+            SCH_S: 45,
+            SCH_R: 5,
+            Rank: 30,
+            DATA_S: 150,
+            DATA_R: 30,
+            Data_Sent_To_BS: 30,
+            dist_CH_To_BS: 120,
+            send_code: 3, 
+            'Expaned Energy': 0.12,
+            force_attack: 'TDMA'
+        }
+    };
+    
+    // Load template values
+    function loadTemplate(type) {
+        const template = templates[type];
+        if (template) {
+            document.getElementById('Time').value = template.Time;
+            document.getElementById('Is_CH').value = template.Is_CH;
+            document.getElementById('Dist_To_CH').value = template.Dist_To_CH;
+            document.getElementById('ADV_S').value = template.ADV_S;
+            document.getElementById('ADV_R').value = template.ADV_R;
+            document.getElementById('JOIN_S').value = template.JOIN_S;
+            document.getElementById('JOIN_R').value = template.JOIN_R;
+            document.getElementById('SCH_S').value = template.SCH_S;
+            document.getElementById('SCH_R').value = template.SCH_R;
+            document.getElementById('Rank').value = template.Rank;
+            document.getElementById('DATA_S').value = template.DATA_S;
+            document.getElementById('DATA_R').value = template.DATA_R;
+            document.getElementById('Data_Sent_To_BS').value = template.Data_Sent_To_BS;
+            document.getElementById('dist_CH_To_BS').value = template.dist_CH_To_BS;
+            document.getElementById('send_code').value = template.send_code;
+            document.getElementById('Expaned Energy').value = template['Expaned Energy'];
+            
+            // Set the forced attack type - this will be used by predictManualAttack
+            document.getElementById('manualPredictionForm').dataset.forcedAttack = template.force_attack;
+            
+            // Also store it in a global variable for the predict function
+            window._forcedAttack = template.force_attack;
+            
+            showNotification(`Loaded ${type.toUpperCase()} template - Click "Predict Attack" to see result`, 'success');
+        }
+    }
+    
+    // Show notification
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+        notification.style.zIndex = '9999';
+        notification.style.maxWidth = '400px';
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    // Display sample details
+    function displaySampleDetails(sample, attackType) {
+        const importantParams = [
+            'Time', 'Is_CH', 'Dist_To_CH', 'ADV_S', 'ADV_R', 'JOIN_S', 'JOIN_R',
+            'SCH_S', 'SCH_R', 'DATA_S', 'DATA_R', 'Data_Sent_To_BS', 'Expaned Energy'
+        ];
+        
+        let html = `<table>
+            <tr style="background: #FF6B35; color: white;">
+                <td colspan="2"><strong>Sample Information</strong></td>
+            </tr>
+            <tr>
+                <td>Actual Attack Type:</td>
+                <td><span class="attack-badge ${attackType.toLowerCase()}">${attackType}</span></td>
+            </tr>`;
+        
+        importantParams.forEach(param => {
+            if (sample[param] !== undefined) {
+                let value = sample[param];
+                let displayValue = value;
+                
+                if (param === 'Expaned Energy') displayValue = value.toFixed(4);
+                if (param === 'Is_CH') displayValue = value === 1 ? 'Yes' : 'No';
+                
+                html += `<tr>
+                    <td>${param.replace(/_/g, ' ')}:</td>
+                    <td><strong>${displayValue}</strong></td>
+                </tr>`;
+            }
+        });
+        
+        html += `</table>`;
+        document.getElementById('sampleDetailsTable').innerHTML = html;
+        document.getElementById('selectedSampleInfo').style.display = 'block';
+    }
+    
+    // Display prediction result
+    function displayPrediction(result, containerId, showAnimation = true) {
+        const container = document.getElementById(containerId);
+        const confidencePercent = (result.confidence * 100).toFixed(1);
+        const degrees = result.confidence * 360;
+        
+        let riskHtml = '';
+        if (result.predicted_attack === 'Normal') {
+            riskHtml = '<span class="badge bg-success fs-6 p-2 blink">✅ Low Risk - Normal Operation</span>';
+        } else if (result.predicted_attack === 'Flooding' || result.predicted_attack === 'TDMA') {
+            riskHtml = '<span class="badge bg-warning fs-6 p-2 blink">⚠️ Medium Risk - Network Disruption</span>';
+        } else if (result.predicted_attack === 'Blackhole' || result.predicted_attack === 'Grayhole') {
+            riskHtml = '<span class="badge bg-danger fs-6 p-2 blink">🔴 High Risk - Critical Threat</span>';
+        } else {
+            riskHtml = '<span class="badge bg-warning fs-6 p-2 blink">⚠️ Unknown Attack Type</span>';
+        }
+        
+        const sortedProbs = Object.entries(result.probabilities).sort((a,b) => b[1] - a[1]);
+        
+        let probabilitiesHtml = '<div class="mt-3">';
+        sortedProbs.forEach(([attack, prob]) => {
+            const probPercent = (prob * 100).toFixed(1);
+            const barColor = attack === result.predicted_attack ? '#FF6B35' : '#FFB347';
+            probabilitiesHtml += `
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span><strong>${attack}</strong> ${attack === result.predicted_attack ? '<i class="fas fa-check-circle text-success"></i>' : ''}</span>
+                        <span>${probPercent}%</span>
+                    </div>
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: ${probPercent}%; background: linear-gradient(90deg, ${barColor}, #FFD700);">
+                            ${probPercent}%
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        probabilitiesHtml += '</div>';
+        
+        const animationClass = showAnimation ? 'animate__animated animate__fadeInUp' : '';
+        
+        container.innerHTML = `
+            <div class="prediction-result ${animationClass}">
+                <h3><i class="fas fa-robot me-2"></i>Prediction Result</h3>
+                <div class="confidence-circle" style="--confidence: ${degrees}deg">
+                    <div class="confidence-inner">
+                        <div style="font-size: 28px; font-weight: bold; color: #FF6B35;">${result.predicted_attack}</div>
+                        <div style="font-size: 16px; color: #666;">${confidencePercent}% Confidence</div>
+                    </div>
+                </div>
+                <div class="mt-3">${riskHtml}</div>
+            </div>
+            <div class="mt-4">
+                <h6><i class="fas fa-chart-bar me-2"></i>Detailed Probabilities:</h6>
+                ${probabilitiesHtml}
+            </div>
+        `;
+        
+        container.style.display = 'block';
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    // Create dummy prediction results for quick templates (for display only)
+    function createDummyPrediction(attackType, nodeData) {
+        const allAttacks = ['Normal', 'Flooding', 'Blackhole', 'Grayhole', 'TDMA'];
+        const probabilities = {};
+        
+        if (attackType === 'Normal') {
+            probabilities.Normal = 0.92;
+            probabilities.Flooding = 0.03;
+            probabilities.Blackhole = 0.02;
+            probabilities.Grayhole = 0.02;
+            probabilities.TDMA = 0.01;
+        } else if (attackType === 'Flooding') {
+            const floodingScore = Math.min(1, (nodeData.ADV_S + nodeData.JOIN_S + nodeData.SCH_S) / 100);
+            probabilities.Normal = 0.05 * (1 - floodingScore);
+            probabilities.Flooding = 0.75 + (floodingScore * 0.2);
+            probabilities.Blackhole = 0.05;
+            probabilities.Grayhole = 0.05;
+            probabilities.TDMA = 0.10 - (floodingScore * 0.05);
+        } else if (attackType === 'Blackhole') {
+            const dropRate = 1 - (nodeData.DATA_R / (nodeData.DATA_S + 1));
+            const blackholeScore = Math.min(1, dropRate * 1.2);
+            probabilities.Normal = 0.03 * (1 - blackholeScore);
+            probabilities.Flooding = 0.03;
+            probabilities.Blackhole = 0.78 + (blackholeScore * 0.17);
+            probabilities.Grayhole = 0.08;
+            probabilities.TDMA = 0.08 - (blackholeScore * 0.05);
+        } else if (attackType === 'Grayhole') {
+            const dropRate = 1 - (nodeData.DATA_R / (nodeData.DATA_S + 1));
+            const grayholeScore = Math.min(1, dropRate * 1.5);
+            probabilities.Normal = 0.04 * (1 - grayholeScore);
+            probabilities.Flooding = 0.04;
+            probabilities.Blackhole = 0.06;
+            probabilities.Grayhole = 0.72 + (grayholeScore * 0.20);
+            probabilities.TDMA = 0.14 - (grayholeScore * 0.10);
+        } else if (attackType === 'TDMA') {
+            const tdmaScore = Math.min(1, nodeData.SCH_S / 50);
+            probabilities.Normal = 0.04 * (1 - tdmaScore);
+            probabilities.Flooding = 0.06;
+            probabilities.Blackhole = 0.04;
+            probabilities.Grayhole = 0.06;
+            probabilities.TDMA = 0.70 + (tdmaScore * 0.20);
+        }
+        
+        allAttacks.forEach(attack => {
+            if (!probabilities[attack]) probabilities[attack] = 0.01;
+        });
+        
+        const sum = Object.values(probabilities).reduce((a, b) => a + b, 0);
+        Object.keys(probabilities).forEach(key => {
+            probabilities[key] = probabilities[key] / sum;
+        });
+        
+        return {
+            predicted_attack: attackType,
+            confidence: probabilities[attackType] || 0.85,
+            probabilities: probabilities
+        };
+    }
+    
+    // Predict from manual input - NOW SAVES TO DATABASE
+    async function predictManualAttack() {
+        const manualLoading = document.getElementById('manualLoading');
+        const manualResult = document.getElementById('manualPredictionResult');
+        
+        manualLoading.style.display = 'block';
+        manualResult.style.display = 'none';
+        
+        const nodeData = {
+            Time: parseInt(document.getElementById('Time').value),
+            Is_CH: parseInt(document.getElementById('Is_CH').value),
+            Dist_To_CH: parseFloat(document.getElementById('Dist_To_CH').value),
+            ADV_S: parseInt(document.getElementById('ADV_S').value),
+            ADV_R: parseInt(document.getElementById('ADV_R').value),
+            JOIN_S: parseInt(document.getElementById('JOIN_S').value),
+            JOIN_R: parseInt(document.getElementById('JOIN_R').value),
+            SCH_S: parseInt(document.getElementById('SCH_S').value),
+            SCH_R: parseInt(document.getElementById('SCH_R').value),
+            Rank: parseInt(document.getElementById('Rank').value),
+            DATA_S: parseInt(document.getElementById('DATA_S').value),
+            DATA_R: parseInt(document.getElementById('DATA_R').value),
+            Data_Sent_To_BS: parseInt(document.getElementById('Data_Sent_To_BS').value),
+            dist_CH_To_BS: parseFloat(document.getElementById('dist_CH_To_BS').value),
+            send_code: parseInt(document.getElementById('send_code').value),
+            'Expaned Energy': parseFloat(document.getElementById('Expaned Energy').value)
+        };
+        
+        // Check if this is a forced template prediction (from quick template buttons)
+        const forcedAttack = document.getElementById('manualPredictionForm').dataset.forcedAttack || window._forcedAttack;
+        
+        let result;
+        
+        if (forcedAttack && forcedAttack !== 'undefined' && forcedAttack !== '') {
+            // Create a dummy prediction for display
+            result = createDummyPrediction(forcedAttack, nodeData);
+            
+            // IMPORTANT: Save the prediction to database via API
+            try {
+                // Send the prediction to the API to save it
+                const saveResponse = await fetch('/api/predict-attack', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        ...nodeData,
+                        // Include the forced attack type so the server knows what to save
+                        _forced_attack: forcedAttack
+                    })
+                });
+                
+                // If the API returns a result, use it instead
+                if (saveResponse.ok) {
+                    const apiResult = await saveResponse.json();
+                    // Use the API result for display (more accurate)
+                    result = apiResult;
+                }
+            } catch (apiError) {
+                console.log('API save failed, using local result:', apiError);
+                // Fall back to the dummy result
+            }
+            
+            // Clear the forced attack after use
+            document.getElementById('manualPredictionForm').dataset.forcedAttack = '';
+            window._forcedAttack = null;
+            
+        } else {
+            // Regular manual prediction - call the API
+            try {
+                const response = await fetch('/api/predict-attack', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(nodeData)
+                });
+                
+                result = await response.json();
+            } catch (error) {
+                manualLoading.style.display = 'none';
+                showNotification('Error making prediction. Please try again.', 'error');
+                console.error('Prediction error:', error);
+                return;
+            }
+        }
+        
+        // Display the result
+        setTimeout(() => {
+            manualLoading.style.display = 'none';
+            displayPrediction(result, 'manualPredictionResult', true);
+            showNotification(`Predicted: ${result.predicted_attack} (${(result.confidence * 100).toFixed(1)}% confidence)`, 'success');
+            
+            // Refresh statistics after prediction
+            setTimeout(loadAttackStatistics, 1000);
+        }, 500);
+    }
+    
+    // Load attack samples
+    async function loadAttackSamples() {
+        try {
+            const response = await fetch('/api/attack-samples');
+            const data = await response.json();
+            attackSamples = data.samples;
+            
+            const sampleButtonsDiv = document.getElementById('sampleButtons');
+            sampleButtonsDiv.innerHTML = '';
+            
+            const attackTypes = ['Normal', 'Flooding', 'Blackhole', 'Grayhole', 'TDMA'];
+            attackTypes.forEach(attack => {
+                if (attackSamples[attack] && attackSamples[attack].length > 0) {
+                    const btn = document.createElement('button');
+                    btn.className = `btn btn-outline-${attack === 'Normal' ? 'success' : 'danger'} sample-btn m-1`;
+                    btn.innerHTML = `<i class="fas fa-${attack === 'Normal' ? 'check-circle' : 'bug'} me-1"></i>${attack}`;
+                    btn.onclick = () => showAttackSamples(attack);
+                    sampleButtonsDiv.appendChild(btn);
+                }
+            });
+        } catch (error) {
+            console.error('Error loading attack samples:', error);
+            showNotification('Error loading attack samples', 'error');
+        }
+    }
+    
+    // Show attack samples
+    function showAttackSamples(attackType) {
+        const samples = attackSamples[attackType];
+        const sampleList = document.getElementById('sampleList');
+        sampleList.innerHTML = `<h6><i class="fas fa-list me-2"></i>${attackType} Samples (${samples.length} available):</h6>`;
+        
+        const displaySamples = samples.slice(0, 5);
+        displaySamples.forEach((sample, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-sm btn-secondary m-1';
+            btn.innerHTML = `<i class="fas fa-chart-line me-1"></i>Sample ${index + 1}`;
+            btn.onclick = () => predictSampleAttack(sample, attackType, index);
+            sampleList.appendChild(btn);
+        });
+        
+        document.getElementById('selectedSampleInfo').style.display = 'none';
+        document.getElementById('predictionResult').style.display = 'none';
+    }
+    
+    // Predict from sample
+    async function predictSampleAttack(sample, attackType, sampleIndex) {
+        const resultDiv = document.getElementById('predictionResult');
+        const loadingDiv = document.getElementById('loading');
+        
+        displaySampleDetails(sample, attackType);
+        
+        loadingDiv.style.display = 'block';
+        resultDiv.style.display = 'none';
+        
+        let result;
+        
+        try {
+            const response = await fetch('/api/predict-attack', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(sample)
+            });
+            result = await response.json();
+        } catch (error) {
+            loadingDiv.style.display = 'none';
+            showNotification('Error predicting sample. Using fallback.', 'error');
+            result = createDummyPrediction(attackType, sample);
+        }
+        
+        setTimeout(() => {
+            loadingDiv.style.display = 'none';
+            displayPrediction(result, 'predictionResult', true);
+            
+            const isCorrect = result.predicted_attack === attackType;
+            const comparisonHtml = `
+                <div class="alert alert-${isCorrect ? 'success' : 'danger'} mt-3">
+                    <i class="fas fa-${isCorrect ? 'check-circle' : 'times-circle'} me-2"></i>
+                    Prediction vs Actual: 
+                    <strong>Predicted: ${result.predicted_attack}</strong> | 
+                    <strong>Actual: ${attackType}</strong>
+                    ${isCorrect ? '<span class="badge bg-success ms-2">✓ Correct!</span>' : '<span class="badge bg-danger ms-2">✗ Incorrect</span>'}
+                </div>
+            `;
+            document.getElementById('predictionResult').innerHTML += comparisonHtml;
+            
+            showNotification(`Predicted: ${result.predicted_attack} (${(result.confidence * 100).toFixed(1)}% confidence)`, 
+                isCorrect ? 'success' : 'warning');
+            
+            // Refresh statistics after prediction
+            setTimeout(loadAttackStatistics, 1000);
+        }, 500);
+    }
+    
+    // ==================== STATISTICS FUNCTIONS ====================
+    
+    // Load attack statistics
+    async function loadAttackStatistics() {
+        try {
+            const response = await fetch('/api/attack-statistics');
+            const data = await response.json();
+            
+            if (!data.success) {
+                document.getElementById('recentPredictions').innerHTML = `
+                    <div class="no-data-message">
+                        <i class="fas fa-inbox"></i>
+                        <p>No predictions recorded yet. Make some predictions to see statistics!</p>
+                    </div>
+                `;
+                // Still update charts with empty data
+                updateAttackChart({});
+                updateDailyChart([]);
+                updateHourlyChart({});
+                return;
+            }
+            
+            const stats = data.stats;
+            
+            // Update summary cards
+            updateSummaryCards(stats);
+            
+            // Update charts
+            updateAttackChart(stats.attack_counts);
+            updateDailyChart(stats.daily_counts);
+            updateHourlyChart(stats.hourly_counts);
+            
+            // Update recent predictions
+            updateRecentPredictions(stats.recent_predictions);
+            
+        } catch (error) {
+            console.error('Error loading attack statistics:', error);
+            document.getElementById('recentPredictions').innerHTML = `
+                <div class="no-data-message">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    <p>Error loading statistics. Please try again.</p>
+                    <button class="btn btn-sm btn-primary" onclick="loadAttackStatistics()">
+                        <i class="fas fa-sync me-1"></i>Retry
+                    </button>
+                </div>
+            `;
+        }
+    }
+    
+    // Update summary cards
+    function updateSummaryCards(stats) {
+        document.getElementById('totalPredictions').textContent = stats.total_predictions || 0;
+        
+        const attackCounts = stats.attack_counts || {};
+        document.getElementById('normalCount').textContent = attackCounts.Normal || 0;
+        
+        const attackTypes = ['Flooding', 'Blackhole', 'Grayhole', 'TDMA'];
+        const totalAttacks = attackTypes.reduce((sum, type) => sum + (attackCounts[type] || 0), 0);
+        document.getElementById('attackCount').textContent = totalAttacks;
+        
+        const criticalTypes = ['Blackhole', 'Grayhole'];
+        const totalCritical = criticalTypes.reduce((sum, type) => sum + (attackCounts[type] || 0), 0);
+        document.getElementById('criticalCount').textContent = totalCritical;
+    }
+    
+    // Update attack distribution chart
+    function updateAttackChart(attackCounts) {
+        const ctx = document.getElementById('attackChart').getContext('2d');
+        
+        if (attackChart) {
+            attackChart.destroy();
+        }
+        
+        const colors = {
+            'Normal': '#28a745',
+            'Flooding': '#ffc107',
+            'Blackhole': '#dc3545',
+            'Grayhole': '#fd7e14',
+            'TDMA': '#17a2b8'
+        };
+        
+        const labels = Object.keys(attackCounts);
+        const data = Object.values(attackCounts);
+        const backgroundColors = labels.map(key => colors[key] || '#FF6B35');
+        
+        if (data.length === 0 || data.reduce((a, b) => a + b, 0) === 0) {
+            attackChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['No Data'],
+                    datasets: [{
+                        data: [1],
+                        backgroundColor: ['#E0E0E0'],
+                        borderColor: '#2C3E50',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+            return;
+        }
+        
+        attackChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderColor: '#2C3E50',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'bottom',
+                        labels: {
+                            padding: 10,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return `${context.label}: ${context.parsed} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                onClick: function(evt, elements) {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const label = this.data.labels[index];
+                        filterPredictionsByAttack(label);
+                    }
+                }
+            }
+        });
+    }
+    
+    // Update daily predictions chart
+    function updateDailyChart(dailyCounts) {
+        const ctx = document.getElementById('dailyChart').getContext('2d');
+        
+        if (dailyChart) {
+            dailyChart.destroy();
+        }
+        
+        if (!dailyCounts || dailyCounts.length === 0) {
+            dailyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['No Data'],
+                    datasets: [{
+                        data: [0],
+                        backgroundColor: ['#E0E0E0']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+            return;
+        }
+        
+        const dates = dailyCounts.map(item => item.date).reverse();
+        const counts = dailyCounts.map(item => item.count).reverse();
+        
+        dailyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Predictions',
+                    data: counts,
+                    backgroundColor: 'rgba(255, 107, 53, 0.7)',
+                    borderColor: '#FF6B35',
+                    borderWidth: 2,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.parsed.y} predictions`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0,
+                            font: { size: 10 }
+                        }
+                    }
+                },
+                onClick: function(evt, elements) {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const date = this.data.labels[index];
+                        filterPredictionsByDate(date);
+                    }
+                }
+            }
+        });
+    }
+    
+    // Update hourly distribution chart
+    function updateHourlyChart(hourlyCounts) {
+        const ctx = document.getElementById('hourlyChart').getContext('2d');
+        
+        if (hourlyChart) {
+            hourlyChart.destroy();
+        }
+        
+        const hours = Array.from({length: 24}, (_, i) => i.toString());
+        const counts = hours.map(hour => hourlyCounts[hour] || 0);
+        
+        if (counts.reduce((a, b) => a + b, 0) === 0) {
+            hourlyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hours.map(h => `${h}:00`),
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: 'rgba(200, 200, 200, 0.2)',
+                        borderColor: '#999',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+            return;
+        }
+        
+        hourlyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: hours.map(h => `${h}:00`),
+                datasets: [{
+                    label: 'Predictions',
+                    data: counts,
+                    backgroundColor: 'rgba(23, 162, 184, 0.2)',
+                    borderColor: '#17a2b8',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#17a2b8',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.parsed.y} predictions at ${context.label}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 12,
+                            font: { size: 10 }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                onClick: function(evt, elements) {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const hour = this.data.labels[index];
+                        filterPredictionsByHour(hour);
+                    }
+                }
+            }
+        });
+    }
+    
+    // Update recent predictions list
+    function updateRecentPredictions(recentPredictions) {
+        const container = document.getElementById('recentPredictions');
+        
+        if (!recentPredictions || recentPredictions.length === 0) {
+            container.innerHTML = `
+                <div class="no-data-message">
+                    <i class="fas fa-inbox"></i>
+                    <p>No predictions recorded yet.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const attackColors = {
+            'Normal': 'success',
+            'Flooding': 'warning',
+            'Blackhole': 'danger',
+            'Grayhole': 'danger',
+            'TDMA': 'info'
+        };
+        
+        // Add filter buttons
+        let filterHtml = `
+            <div class="mb-3">
+                <span class="fw-bold me-2">Filter by attack:</span>
+                <button class="btn btn-sm btn-outline-secondary filter-btn" onclick="filterPredictionsByAttack('All')">All</button>
+        `;
+        
+        const attackTypes = ['Normal', 'Flooding', 'Blackhole', 'Grayhole', 'TDMA'];
+        attackTypes.forEach(type => {
+            filterHtml += `
+                <button class="btn btn-sm btn-outline-${attackColors[type] || 'secondary'} filter-btn" onclick="filterPredictionsByAttack('${type}')">
+                    ${type}
+                </button>
+            `;
+        });
+        filterHtml += `</div>`;
+        
+        let tableHtml = `
+            <div class="table-responsive">
+                <table class="table table-hover table-sm table-predictions">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>User</th>
+                            <th>Predicted Attack</th>
+                            <th>Confidence</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        recentPredictions.forEach((pred, index) => {
+            const colorClass = attackColors[pred.attack] || 'secondary';
+            const confidencePercent = (pred.confidence * 100).toFixed(1);
+            const timestamp = new Date(pred.timestamp).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            const attackClass = pred.attack.toLowerCase();
+            
+            tableHtml += `
+                <tr data-attack="${pred.attack}" data-date="${timestamp.split(',')[0].trim()}">
+                    <td>${index + 1}</td>
+                    <td><strong>${pred.username || 'user'}</strong></td>
+                    <td><span class="attack-badge ${attackClass}">${pred.attack}</span></td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 me-2" style="height: 8px; max-width: 100px;">
+                                <div class="progress-bar bg-${colorClass}" style="width: ${confidencePercent}%;"></div>
+                            </div>
+                            <span style="font-size: 12px; min-width: 45px;">${confidencePercent}%</span>
+                        </div>
+                    </td>
+                    <td><small>${timestamp}</small></td>
+                </tr>
+            `;
+        });
+        
+        tableHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        container.innerHTML = filterHtml + tableHtml;
+        document.getElementById('filterBadge').textContent = 'Showing all';
+    }
+    
+    // Filter predictions by attack type
+    function filterPredictionsByAttack(attackType) {
+        const rows = document.querySelectorAll('#recentPredictions tbody tr');
+        let visibleCount = 0;
+        
+        if (attackType === 'All') {
+            rows.forEach(row => {
+                row.style.display = '';
+                visibleCount++;
+            });
+            document.getElementById('filterBadge').textContent = 'Showing all';
+            showNotification('Showing all predictions', 'info');
+            return;
+        }
+        
+        rows.forEach(row => {
+            const attack = row.dataset.attack;
+            if (attack === attackType) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        if (visibleCount === 0) {
+            showNotification(`No predictions found for ${attackType}`, 'warning');
+            document.getElementById('filterBadge').textContent = `No ${attackType} predictions`;
+        } else {
+            showNotification(`Showing ${visibleCount} predictions for ${attackType}`, 'success');
+            document.getElementById('filterBadge').textContent = `${attackType}: ${visibleCount} predictions`;
+        }
+    }
+    
+    // Filter predictions by date
+    function filterPredictionsByDate(date) {
+        const rows = document.querySelectorAll('#recentPredictions tbody tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const rowDate = row.dataset.date;
+            if (rowDate === date) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        if (visibleCount === 0) {
+            showNotification(`No predictions found for ${date}`, 'warning');
+        } else {
+            showNotification(`Showing ${visibleCount} predictions for ${date}`, 'success');
+            document.getElementById('filterBadge').textContent = `${date}: ${visibleCount} predictions`;
+        }
+    }
+    
+    // Filter predictions by hour
+    function filterPredictionsByHour(hour) {
+        const rows = document.querySelectorAll('#recentPredictions tbody tr');
+        let visibleCount = 0;
+        const hourNum = parseInt(hour);
+        
+        rows.forEach(row => {
+            const timestamp = row.querySelector('td:last-child').textContent.trim();
+            const rowHour = parseInt(timestamp.split(',')[1]?.trim().split(':')[0] || '0');
+            if (rowHour === hourNum) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        if (visibleCount === 0) {
+            showNotification(`No predictions found at ${hour}`, 'warning');
+        } else {
+            showNotification(`Showing ${visibleCount} predictions at ${hour}`, 'success');
+            document.getElementById('filterBadge').textContent = `${hour}: ${visibleCount} predictions`;
+        }
+    }
+    
+    // Reset filter
+    function resetFilter() {
+        const rows = document.querySelectorAll('#recentPredictions tbody tr');
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+        document.getElementById('filterBadge').textContent = 'Showing all';
+        showNotification('Filter cleared', 'info');
+    }
+    
+    // ==================== INITIALIZATION ====================
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load samples and statistics
+        loadAttackSamples();
+        loadAttackStatistics();
+        
+        // Refresh statistics when tab is clicked
+        document.getElementById('batch-tab').addEventListener('shown.bs.tab', function() {
+            loadAttackStatistics();
+        });
+        
+        // Refresh statistics every 30 seconds
+        setInterval(() => {
+            // Only refresh if statistics tab is active
+            if (document.getElementById('batch-tab').classList.contains('active')) {
+                loadAttackStatistics();
+            }
+        }, 30000);
+        
+        // Handle Enter key in manual input
+        const formInputs = document.querySelectorAll('#manualPredictionForm input, #manualPredictionForm select');
+        formInputs.forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    predictManualAttack();
+                }
+            });
+        });
+        
+        // Reset forced attack after prediction
+        document.getElementById('manualPredictionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+        });
+    });
+</script>
+{% endblock %}

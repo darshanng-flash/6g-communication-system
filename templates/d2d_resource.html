@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .result-card {
+        background: linear-gradient(135deg, #FF6B35, #FFB347);
+        border-radius: 15px;
+        padding: 20px;
+        color: white;
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .resource-meter {
+        width: 100%;
+        height: 40px;
+        background: #e0e0e0;
+        border-radius: 20px;
+        overflow: hidden;
+        margin: 20px 0;
+        position: relative;
+    }
+    
+    .resource-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+        transition: width 1s ease;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 15px;
+        color: white;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
+    .input-group-custom {
+        margin-bottom: 20px;
+    }
+    
+    .input-group-custom label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #2C3E50;
+    }
+    
+    .input-group-custom input {
+        border: 2px solid #FFE0CC;
+        border-radius: 10px;
+        padding: 10px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .input-group-custom input:focus {
+        border-color: #FF6B35;
+        outline: none;
+        box-shadow: 0 0 5px rgba(255,107,53,0.3);
+    }
+    
+    .metric-card {
+        background: #FFF8F0;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+    }
+    
+    .feature-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        background: #FF6B35;
+        color: white;
+        border-radius: 5px;
+        font-size: 12px;
+        margin: 2px;
+    }
+    
+    .example-cards {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .example-btn {
+        flex: 1;
+        padding: 8px;
+        background: #FFF8F0;
+        border: 2px solid #FFE0CC;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    
+    .example-btn:hover {
+        background: #FF6B35;
+        color: white;
+        border-color: #FF6B35;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-chart-pie text-success me-2"></i>D2D Resource Allocation Prediction</h2>
+            <p>Predict optimal resource allocation for Device-to-Device communication based on 4 key network parameters</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="attack-card">
+                <h5><i class="fas fa-sliders-h me-2"></i>Input Parameters (4 Features)</h5>
+                <hr>
+                
+                <!-- Example Scenarios -->
+                <div class="parameter-card">
+                    <label class="form-label fw-bold">Quick Example Scenarios:</label>
+                    <div class="example-cards">
+                        <div class="example-btn" onclick="loadExample('low')">
+                            <i class="fas fa-tachometer-alt me-1"></i>Low Load
+                        </div>
+                        <div class="example-btn" onclick="loadExample('medium')">
+                            <i class="fas fa-chart-line me-1"></i>Medium Load
+                        </div>
+                        <div class="example-btn" onclick="loadExample('high')">
+                            <i class="fas fa-bolt me-1"></i>High Load
+                        </div>
+                        <div class="example-btn" onclick="loadExample('critical')">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Critical
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="resourcePredictionForm">
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-tachometer-alt me-2"></i>Required Bandwidth (Mbps)</label>
+                        <input type="number" class="form-control" id="required_bandwidth" step="0.1" placeholder="e.g., 10" required>
+                        <small class="text-muted">Bandwidth needed for the application (Feature 1)</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-chart-line me-2"></i>Allocated Bandwidth (Mbps)</label>
+                        <input type="number" class="form-control" id="allocated_bandwidth" step="0.1" placeholder="e.g., 15" required>
+                        <small class="text-muted">Bandwidth currently allocated (Feature 2)</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-signal me-2"></i>Signal Strength (dBm)</label>
+                        <input type="number" class="form-control" id="signal_strength" step="0.1" placeholder="e.g., -75" required>
+                        <small class="text-muted">Better signal = higher resource efficiency (Feature 3)</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-clock me-2"></i>Latency (ms)</label>
+                        <input type="number" class="form-control" id="latency" step="0.1" placeholder="e.g., 30" required>
+                        <small class="text-muted">Lower latency = better performance (Feature 4)</small>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary w-100" onclick="predictResource()">
+                        <i class="fas fa-chart-line me-2"></i>Predict Resource Allocation
+                    </button>
+                </form>
+                
+                <div class="mt-3">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Model Information:</strong> Trained with 4 features: Required Bandwidth, Allocated Bandwidth, Signal Strength, Latency
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div id="predictionResult" style="display: none;"></div>
+            <div id="loading" style="display: none;" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>Calculating optimal resource allocation...</p>
+            </div>
+            
+            <div class="attack-card">
+                <h5><i class="fas fa-chart-line me-2"></i>Input Features Summary</h5>
+                <hr>
+                <div class="metric-card">
+                    <strong>Your Model Uses 4 Features:</strong>
+                    <div class="mt-2">
+                        <span class="feature-badge">1. Required Bandwidth</span>
+                        <span class="feature-badge">2. Allocated Bandwidth</span>
+                        <span class="feature-badge">3. Signal Strength</span>
+                        <span class="feature-badge">4. Latency</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card mt-3">
+                    <strong>Resource Utilization Guide:</strong>
+                    <div class="mt-2">
+                        <div class="d-flex justify-content-between">
+                            <span>0-30%</span>
+                            <span class="text-secondary">Underutilized</span>
+                        </div>
+                        <div class="progress mt-1 mb-2">
+                            <div class="progress-bar bg-secondary" style="width: 30%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>30-60%</span>
+                            <span class="text-info">Moderate</span>
+                        </div>
+                        <div class="progress mt-1 mb-2">
+                            <div class="progress-bar bg-info" style="width: 30%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>60-85%</span>
+                            <span class="text-success">Optimal</span>
+                        </div>
+                        <div class="progress mt-1 mb-2">
+                            <div class="progress-bar bg-success" style="width: 25%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>85-100%</span>
+                            <span class="text-danger">Critical</span>
+                        </div>
+                        <div class="progress mt-1">
+                            <div class="progress-bar bg-danger" style="width: 15%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Example configurations
+    const examples = {
+        low: {
+            required_bandwidth: 5,
+            allocated_bandwidth: 20,
+            signal_strength: -85,
+            latency: 50,
+            name: "Low Load Scenario"
+        },
+        medium: {
+            required_bandwidth: 15,
+            allocated_bandwidth: 25,
+            signal_strength: -75,
+            latency: 30,
+            name: "Medium Load Scenario"
+        },
+        high: {
+            required_bandwidth: 30,
+            allocated_bandwidth: 35,
+            signal_strength: -65,
+            latency: 20,
+            name: "High Load Scenario"
+        },
+        critical: {
+            required_bandwidth: 50,
+            allocated_bandwidth: 45,
+            signal_strength: -95,
+            latency: 80,
+            name: "Critical Scenario"
+        }
+    };
+    
+    // Load example values
+    function loadExample(type) {
+        const example = examples[type];
+        if (example) {
+            document.getElementById('required_bandwidth').value = example.required_bandwidth;
+            document.getElementById('allocated_bandwidth').value = example.allocated_bandwidth;
+            document.getElementById('signal_strength').value = example.signal_strength;
+            document.getElementById('latency').value = example.latency;
+            
+            // Show notification
+            showNotification(`Loaded ${example.name}`, 'info');
+            
+            // Auto-predict after loading example
+            setTimeout(() => predictResource(), 100);
+        }
+    }
+    
+    // Show notification
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+        notification.style.zIndex = '9999';
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+    
+    // Predict resource allocation
+    async function predictResource() {
+        const loading = document.getElementById('loading');
+        const resultDiv = document.getElementById('predictionResult');
+        
+        // Get form values
+        const required_bandwidth = parseFloat(document.getElementById('required_bandwidth').value);
+        const allocated_bandwidth = parseFloat(document.getElementById('allocated_bandwidth').value);
+        const signal_strength = parseFloat(document.getElementById('signal_strength').value);
+        const latency = parseFloat(document.getElementById('latency').value);
+        
+        // Validate inputs
+        if (isNaN(required_bandwidth) || isNaN(allocated_bandwidth) || 
+            isNaN(signal_strength) || isNaN(latency)) {
+            alert('Please fill all fields with valid numbers');
+            return;
+        }
+        
+        loading.style.display = 'block';
+        resultDiv.style.display = 'none';
+        
+        try {
+            const response = await fetch('/api/predict-resource', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    required_bandwidth: required_bandwidth,
+                    allocated_bandwidth: allocated_bandwidth,
+                    signal_strength: signal_strength,
+                    latency: latency
+                })
+            });
+            
+            const result = await response.json();
+            
+            setTimeout(() => {
+                loading.style.display = 'none';
+                
+                if (result.success) {
+                    displayResourceResult(result);
+                    showNotification('Prediction completed successfully!', 'success');
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error: ${result.error}
+                        </div>
+                    `;
+                    resultDiv.style.display = 'block';
+                }
+            }, 500);
+            
+        } catch (error) {
+            loading.style.display = 'none';
+            alert('Error making prediction. Please try again.');
+            console.error('Prediction error:', error);
+        }
+    }
+    
+    // Display resource prediction result
+    function displayResourceResult(result) {
+        const resultDiv = document.getElementById('predictionResult');
+        const resourceValue = result.predicted_resource;
+        const utilization = result.utilization_percent;
+        
+        let statusIcon = '';
+        let statusColor = '';
+        if (utilization < 30) {
+            statusIcon = 'fa-arrow-down';
+            statusColor = '#6c757d';
+        } else if (utilization < 60) {
+            statusIcon = 'fa-exchange-alt';
+            statusColor = '#17a2b8';
+        } else if (utilization < 85) {
+            statusIcon = 'fa-arrow-up';
+            statusColor = '#28a745';
+        } else {
+            statusIcon = 'fa-exclamation-triangle';
+            statusColor = '#dc3545';
+        }
+        
+        resultDiv.innerHTML = `
+            <div class="result-card animate__animated animate__fadeInUp">
+                <h3><i class="fas fa-chart-pie me-2"></i>Resource Allocation Result</h3>
+                <div class="resource-meter">
+                    <div class="resource-fill" style="width: ${utilization}%">
+                        ${utilization.toFixed(1)}%
+                    </div>
+                </div>
+                <div class="display-4 mb-3">
+                    ${resourceValue.toFixed(1)}<small style="font-size: 18px;">%</small>
+                </div>
+                <div class="efficiency-badge" style="background: ${result.utilization_color === 'success' ? '#28a745' : 
+                    result.utilization_color === 'info' ? '#17a2b8' : 
+                    result.utilization_color === 'secondary' ? '#6c757d' : '#dc3545'}">
+                    <i class="fas ${statusIcon} me-2"></i>
+                    ${result.utilization_level}
+                </div>
+                <p class="mt-3">${result.message}</p>
+            </div>
+            <div class="metric-card mt-3">
+                <h6><i class="fas fa-chart-line me-2"></i>Input Parameters Analysis</h6>
+                <table class="table table-sm mt-2">
+                    <tr>
+                        <td><strong>Required Bandwidth:</strong></td>
+                        <td>${document.getElementById('required_bandwidth').value} Mbps</td>
+                        <td class="text-muted">Feature 1</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Allocated Bandwidth:</strong></td>
+                        <td>${document.getElementById('allocated_bandwidth').value} Mbps</td>
+                        <td class="text-muted">Feature 2</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Signal Strength:</strong></td>
+                        <td>${document.getElementById('signal_strength').value} dBm</td>
+                        <td class="text-muted">Feature 3</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Latency:</strong></td>
+                        <td>${document.getElementById('latency').value} ms</td>
+                        <td class="text-muted">Feature 4</td>
+                    </tr>
+                    <tr class="table-active">
+                        <td><strong>Predicted Resource Usage:</strong></td>
+                        <td colspan="2"><strong>${resourceValue.toFixed(1)}%</strong></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="mt-3">
+                <div class="alert alert-${result.utilization_color === 'success' ? 'success' : 
+                    result.utilization_color === 'info' ? 'info' : 
+                    result.utilization_color === 'secondary' ? 'secondary' : 'danger'}">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Recommendation:</strong> ${result.recommendation}
+                </div>
+            </div>
+        `;
+        
+        resultDiv.style.display = 'block';
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,73 @@
+
+========================================
+6G ATTACK PREDICTION SYSTEM - TRAINING REPORT
+========================================
+
+Dataset Information:
+- Total samples: 374661
+- Training samples used: 100000
+- Features used: 27
+- Attack types: 5
+
+Attack Distribution:
+----------------------------------------
+Normal       340066
+Grayhole      14596
+Blackhole     10049
+TDMA           6638
+Flooding       3312
+
+Model Performance Summary:
+----------------------------------------
+Best Model: Neural Network
+Best Accuracy: 0.9945
+
+Model Details:
+----------------------------------------
+
+Random Forest:
+- Accuracy: 0.9941
+- Training Time: 4.27 seconds
+
+Decision Tree:
+- Accuracy: 0.9924
+- Training Time: 0.87 seconds
+
+Neural Network:
+- Accuracy: 0.9945
+- Training Time: 29.51 seconds
+
+SVM (Linear):
+- Accuracy: 0.9804
+- Training Time: 259.90 seconds
+
+Cross-Validation Performance (Best Model):
+- Mean CV Accuracy: 0.9935
+- Std CV Accuracy: 0.0006
+- CV Scores: [0.9937 0.9942 0.9923 0.9935 0.9936]
+
+Per-Class Performance (Best Model):
+----------------------------------------
+              precision    recall  f1-score   support
+
+   Blackhole       0.95      0.97      0.96       545
+    Flooding       0.89      0.99      0.94       178
+    Grayhole       0.96      0.96      0.96       795
+      Normal       1.00      1.00      1.00     18125
+        TDMA       0.99      0.94      0.96       357
+
+    accuracy                           0.99     20000
+   macro avg       0.96      0.97      0.96     20000
+weighted avg       0.99      0.99      0.99     20000
+
+
+Saved Files:
+1. attack_prediction_best_model.pkl - Trained best model
+2. attack_label_encoder.pkl - Label encoder for attack types
+3. attack_feature_scaler.pkl - Feature scaler
+4. attack_features_list.pkl - List of features used
+5. attack_prediction_analysis.png - Model performance graphs
+6. attack_patterns_analysis.png - Attack pattern analysis
+7. attack_training_report.txt - This report
+
+========================================

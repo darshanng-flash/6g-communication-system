@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .result-card {
+        background: linear-gradient(135deg, #FF6B35, #FFB347);
+        border-radius: 15px;
+        padding: 20px;
+        color: white;
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .power-gauge {
+        width: 200px;
+        height: 200px;
+        margin: 20px auto;
+        position: relative;
+    }
+    
+    .power-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 36px;
+        font-weight: bold;
+        text-align: center;
+    }
+    
+    .input-group-custom {
+        margin-bottom: 20px;
+    }
+    
+    .input-group-custom label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #2C3E50;
+    }
+    
+    .input-group-custom input, 
+    .input-group-custom select {
+        border: 2px solid #FFE0CC;
+        border-radius: 10px;
+        padding: 10px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .input-group-custom input:focus, 
+    .input-group-custom select:focus {
+        border-color: #FF6B35;
+        outline: none;
+        box-shadow: 0 0 5px rgba(255,107,53,0.3);
+    }
+    
+    .efficiency-badge {
+        display: inline-block;
+        padding: 8px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        margin-top: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-bolt text-warning me-2"></i>D2D Power Allocation Prediction</h2>
+            <p>Predict optimal power allocation for Device-to-Device communication based on user profile and network conditions</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="attack-card">
+                <h5><i class="fas fa-sliders-h me-2"></i>Input Parameters</h5>
+                <hr>
+                
+                <form id="powerPredictionForm">
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-user me-2"></i>User ID</label>
+                        <select class="form-control" id="user_id" required>
+                            <option value="">Select User ID</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-mobile-alt me-2"></i>Application Type</label>
+                        <select class="form-control" id="application_type" required>
+                            <option value="">Select Application Type</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-signal me-2"></i>Signal Strength (dBm)</label>
+                        <input type="number" class="form-control" id="signal_strength" step="0.1" placeholder="e.g., -75" required>
+                        <small class="text-muted">Typical range: -100 to -30 dBm</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-clock me-2"></i>Latency (ms)</label>
+                        <input type="number" class="form-control" id="latency" step="0.1" placeholder="e.g., 30" required>
+                        <small class="text-muted">Typical range: 10-100 ms</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-tachometer-alt me-2"></i>Required Bandwidth (Mbps)</label>
+                        <input type="number" class="form-control" id="required_bandwidth" step="0.1" placeholder="e.g., 10" required>
+                        <small class="text-muted">Typical range: 5-100 Mbps</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-chart-line me-2"></i>Allocated Bandwidth (Mbps)</label>
+                        <input type="number" class="form-control" id="allocated_bandwidth" step="0.1" placeholder="e.g., 15" required>
+                        <small class="text-muted">Typical range: 5-100 Mbps</small>
+                    </div>
+                    
+                    <div class="input-group-custom">
+                        <label><i class="fas fa-percent me-2"></i>Resource Allocation (%)</label>
+                        <input type="number" class="form-control" id="resource_allocation" step="0.1" placeholder="e.g., 70" required>
+                        <small class="text-muted">Typical range: 0-100%</small>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary w-100" onclick="predictPower()">
+                        <i class="fas fa-chart-line me-2"></i>Predict Power Allocation
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div id="predictionResult" style="display: none;"></div>
+            <div id="loading" style="display: none;" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>Analyzing network parameters...</p>
+            </div>
+            
+            <div class="attack-card mt-3">
+                <h5><i class="fas fa-info-circle me-2"></i>About Power Allocation</h5>
+                <hr>
+                <p class="small">
+                    Power allocation prediction helps optimize energy consumption in D2D communication by:
+                </p>
+                <ul class="small">
+                    <li>Minimizing interference between D2D and cellular links</li>
+                    <li>Maximizing energy efficiency while maintaining QoS</li>
+                    <li>Adapting power levels based on channel conditions</li>
+                    <li>Balancing power consumption across connected devices</li>
+                </ul>
+                <div class="alert alert-info mt-2">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Tip:</strong> Lower power allocation values indicate better energy efficiency while maintaining connection quality.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Load D2D options on page load
+    async function loadD2DOptions() {
+        try {
+            const response = await fetch('/api/d2d-options');
+            const data = await response.json();
+            
+            if (data.success) {
+                // Populate user IDs
+                const userSelect = document.getElementById('user_id');
+                data.user_ids.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user;
+                    option.textContent = user;
+                    userSelect.appendChild(option);
+                });
+                
+                // Populate application types
+                const appSelect = document.getElementById('application_type');
+                data.application_types.forEach(app => {
+                    const option = document.createElement('option');
+                    option.value = app;
+                    option.textContent = app;
+                    appSelect.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading options:', error);
+        }
+    }
+    
+    // Predict power allocation
+    async function predictPower() {
+        const loading = document.getElementById('loading');
+        const resultDiv = document.getElementById('predictionResult');
+        
+        // Get form values
+        const user_id = document.getElementById('user_id').value;
+        const application_type = document.getElementById('application_type').value;
+        const signal_strength = parseFloat(document.getElementById('signal_strength').value);
+        const latency = parseFloat(document.getElementById('latency').value);
+        const required_bandwidth = parseFloat(document.getElementById('required_bandwidth').value);
+        const allocated_bandwidth = parseFloat(document.getElementById('allocated_bandwidth').value);
+        const resource_allocation = parseFloat(document.getElementById('resource_allocation').value);
+        
+        // Validate inputs
+        if (!user_id || !application_type) {
+            alert('Please select User ID and Application Type');
+            return;
+        }
+        
+        if (isNaN(signal_strength) || isNaN(latency) || isNaN(required_bandwidth) || 
+            isNaN(allocated_bandwidth) || isNaN(resource_allocation)) {
+            alert('Please fill all fields with valid numbers');
+            return;
+        }
+        
+        loading.style.display = 'block';
+        resultDiv.style.display = 'none';
+        
+        try {
+            const response = await fetch('/api/predict-power', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: user_id,
+                    application_type: application_type,
+                    signal_strength: signal_strength,
+                    latency: latency,
+                    required_bandwidth: required_bandwidth,
+                    allocated_bandwidth: allocated_bandwidth,
+                    resource_allocation: resource_allocation
+                })
+            });
+            
+            const result = await response.json();
+            
+            setTimeout(() => {
+                loading.style.display = 'none';
+                
+                if (result.success) {
+                    displayPowerResult(result);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error: ${result.error}
+                        </div>
+                    `;
+                    resultDiv.style.display = 'block';
+                }
+            }, 500);
+            
+        } catch (error) {
+            loading.style.display = 'none';
+            alert('Error making prediction. Please try again.');
+            console.error('Prediction error:', error);
+        }
+    }
+    
+    // Display power prediction result
+    function displayPowerResult(result) {
+        const resultDiv = document.getElementById('predictionResult');
+        const powerValue = result.predicted_power;
+        const percentage = Math.min((powerValue / 100) * 100, 100);
+        
+        // Determine color based on power level
+        let gaugeColor = '#28a745';
+        if (powerValue > 80) gaugeColor = '#dc3545';
+        else if (powerValue > 60) gaugeColor = '#fd7e14';
+        else if (powerValue > 40) gaugeColor = '#ffc107';
+        
+        resultDiv.innerHTML = `
+            <div class="result-card">
+                <h3><i class="fas fa-bolt me-2"></i>Power Allocation Result</h3>
+                <div class="power-gauge">
+                    <canvas id="powerGauge" width="200" height="200"></canvas>
+                    <div class="power-value">
+                        ${powerValue.toFixed(1)}<small style="font-size: 16px;"> units</small>
+                    </div>
+                </div>
+                <div class="efficiency-badge" style="background: ${result.efficiency_color === 'success' ? '#28a745' : 
+                    result.efficiency_color === 'info' ? '#17a2b8' : 
+                    result.efficiency_color === 'warning' ? '#ffc107' : '#dc3545'}">
+                    <i class="fas fa-${result.efficiency_color === 'success' ? 'check-circle' : 
+                        result.efficiency_color === 'info' ? 'info-circle' : 
+                        result.efficiency_color === 'warning' ? 'exclamation-triangle' : 'times-circle'} me-2"></i>
+                    ${result.efficiency_level}
+                </div>
+                <p class="mt-3">${result.message}</p>
+            </div>
+            <div class="mt-3">
+                <h6>Interpretation:</h6>
+                <ul class="small">
+                    <li><strong>0-30 units:</strong> Excellent - Optimal power efficiency</li>
+                    <li><strong>30-60 units:</strong> Good - Balanced power consumption</li>
+                    <li><strong>60-85 units:</strong> Fair - Moderate power usage</li>
+                    <li><strong>85+ units:</strong> Poor - High power consumption, optimize needed</li>
+                </ul>
+            </div>
+        `;
+        
+        resultDiv.style.display = 'block';
+        
+        // Draw gauge
+        drawGauge('powerGauge', percentage, gaugeColor);
+    }
+    
+    // Draw gauge chart
+    function drawGauge(canvasId, percentage, color) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const radius = 80;
+        
+        ctx.clearRect(0, 0, width, height);
+        
+        // Draw background arc
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, -Math.PI / 2, (Math.PI * 2) - Math.PI / 2);
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 20;
+        ctx.stroke();
+        
+        // Draw value arc
+        const endAngle = -Math.PI / 2 + (percentage / 100) * (Math.PI * 2);
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, -Math.PI / 2, endAngle);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 20;
+        ctx.stroke();
+        
+        // Draw center circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 15, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+    
+    // Load options on page load
+    loadD2DOptions();
+</script>
+{% endblock %}

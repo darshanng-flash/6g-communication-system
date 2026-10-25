@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient text-white" style="background: linear-gradient(135deg, #311c15, #7d4a03);">
+                <div class="card-body">
+                    <h2 class="card-title">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        6G Communication System Dashboard
+                    </h2>
+                    <p class="card-text">Advanced Network Management System with AI-Powered Optimization</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <i class="fas fa-microchip fa-3x mb-3"></i>
+                <div class="stat-number">6G</div>
+                <div>Next-Gen Technology</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <i class="fas fa-shield-alt fa-3x mb-3"></i>
+                <div class="stat-number">99.9%</div>
+                <div>Security Accuracy</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <i class="fas fa-chart-line fa-3x mb-3"></i>
+                <div class="stat-number">1ms</div>
+                <div>Ultra-Low Latency</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <i class="fas fa-bolt fa-3x mb-3"></i>
+                <div class="stat-number">D2D</div>
+                <div>Device-to-Device</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-project-diagram fa-3x mb-3" style="color: #FF6B35;"></i>
+                    <h5 class="card-title">Cluster Simulation</h5>
+                    <p class="card-text">Visualize 6G network clusters with Dijkstra, A*, and Bellman-Ford algorithms</p>
+                    <a href="{{ url_for('cluster_simulation') }}" class="btn btn-primary">Launch →</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-shield-alt fa-3x mb-3" style="color: #FF6B35;"></i>
+                    <h5 class="card-title">Attack Prediction</h5>
+                    <p class="card-text">ML-based detection for 5 types of network attacks with 99% accuracy</p>
+                    <a href="{{ url_for('attack_prediction') }}" class="btn btn-primary">Start →</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-bolt fa-3x mb-3" style="color: #FF6B35;"></i>
+                    <h5 class="card-title">D2D Communication</h5>
+                    <p class="card-text">Smart power and resource allocation for device-to-device communication</p>
+                    <a href="{{ url_for('d2d_power') }}" class="btn btn-primary">Explore →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle me-2"></i>
+                        System Overview
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check-circle text-success me-2"></i> AI-Powered Cluster Optimization</li>
+                                <li><i class="fas fa-check-circle text-success me-2"></i> Real-time Attack Detection</li>
+                                <li><i class="fas fa-check-circle text-success me-2"></i> 3 Shortest Path Algorithms</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check-circle text-success me-2"></i> D2D Power Optimization</li>
+                                <li><i class="fas fa-check-circle text-success me-2"></i> Smart Resource Allocation</li>
+                                <li><i class="fas fa-check-circle text-success me-2"></i> Media Performance Analysis</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check-circle text-success me-2"></i> Bellman-Ford Algorithm</li>
+                                <li><i class="fas fa-check-circle text-success me-2"></i> A* Algorithm</li>
+                                <li><i class="fas fa-check-circle text-success me-2"></i> Dijkstra's Algorithm</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

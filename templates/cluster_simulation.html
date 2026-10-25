@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    #networkCanvas {
+        border: 2px solid #FF6B35;
+        border-radius: 10px;
+        background: #FFFFFF;
+        cursor: pointer;
+        width: 100%;
+        height: 600px;
+    }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #FFF5E6, #FFFFFF);
+        border-left: 4px solid #FF6B35;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 10px;
+    }
+    
+    .algorithm-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid #FFE0CC;
+    }
+    
+    .algorithm-card:hover {
+        border-color: #FF6B35;
+        transform: translateY(-3px);
+    }
+    
+    .algorithm-card.active {
+        border-color: #FF6B35;
+        background: linear-gradient(135deg, #FFF5E6, #FFFFFF);
+    }
+    
+    .path-highlight {
+        stroke: #FF6B35;
+        stroke-width: 4;
+        filter: drop-shadow(0 0 5px #FF6B35);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-project-diagram text-primary me-2"></i>6G Cluster Simulation</h2>
+            <p>Real-time network visualization with 3 shortest path algorithms: Dijkstra, A*, and Bellman-Ford</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="networkCanvas"></canvas>
+                    <div class="mt-3 text-center">
+                        <span class="badge bg-primary me-2">🟠 Cluster Heads</span>
+                        <span class="badge bg-secondary me-2">⚪ Regular Nodes</span>
+                        <span class="badge bg-success me-2">🟢 Active Path</span>
+                        <span class="badge bg-info me-2">📊 Data Flow</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="attack-card">
+                <h5><i class="fas fa-sliders-h me-2"></i>Simulation Controls</h5>
+                <hr>
+                
+                <div class="mb-3">
+                    <label class="form-label">Number of Nodes:</label>
+                    <input type="range" class="form-range" id="nodeCount" min="8" max="25" value="15">
+                    <span id="nodeCountValue" class="badge bg-primary">15</span>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Shortest Path Algorithm:</label>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <div class="card algorithm-card p-2 text-center" onclick="selectAlgorithm('dijkstra')" id="algo-dijkstra">
+                                <i class="fas fa-route fa-2x" style="color: #FF6B35;"></i>
+                                <small>Dijkstra's</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card algorithm-card p-2 text-center" onclick="selectAlgorithm('astar')" id="algo-astar">
+                                <i class="fas fa-star fa-2x" style="color: #FF6B35;"></i>
+                                <small>A* Algorithm</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card algorithm-card p-2 text-center" onclick="selectAlgorithm('bellman_ford')" id="algo-bellman">
+                                <i class="fas fa-chart-line fa-2x" style="color: #FF6B35;"></i>
+                                <small>Bellman-Ford</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Source Node:</label>
+                    <select id="sourceNode" class="form-select"></select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Target Node:</label>
+                    <select id="targetNode" class="form-select"></select>
+                </div>
+                
+                <button class="btn btn-primary w-100 mb-2" onclick="calculatePath()">
+                    <i class="fas fa-route me-2"></i>Calculate Shortest Path
+                </button>
+                
+                <button class="btn btn-outline-primary w-100" onclick="resetSimulation()">
+                    <i class="fas fa-sync-alt me-2"></i>Reset Simulation
+                </button>
+            </div>
+            
+            <div class="mt-3">
+                <div class="metric-card">
+                    <h6><i class="fas fa-tachometer-alt me-2"></i>Network Metrics</h6>
+                    <div id="networkMetrics">
+                        <p><strong>Bandwidth:</strong> <span id="bandwidth">--</span></p>
+                        <p><strong>Latency:</strong> <span id="latency">--</span></p>
+                        <p><strong>Active Flows:</strong> <span id="activeFlows">--</span></p>
+                        <p><strong>Packet Loss:</strong> <span id="packetLoss">--</span></p>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <h6><i class="fas fa-chart-line me-2"></i>Path Details</h6>
+                    <div id="pathDetails">
+                        <p><strong>Algorithm:</strong> <span id="algorithmUsed">--</span></p>
+                        <p><strong>Path Length:</strong> <span id="pathLength">--</span></p>
+                        <p><strong>Total Latency:</strong> <span id="pathLatency">--</span></p>
+                        <p><strong>Min Bandwidth:</strong> <span id="pathBandwidth">--</span></p>
+                        <p><strong>Hops:</strong> <span id="pathHops">--</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let canvas = document.getElementById('networkCanvas');
+    let ctx = canvas.getContext('2d');
+    let nodes = [];
+    let edges = [];
+    let currentPath = [];
+    let currentAlgorithm = 'dijkstra';
+    let animationInterval;
+    
+    function resizeCanvas() {
+        const container = canvas.parentElement;
+        canvas.width = container.clientWidth;
+        canvas.height = 550;
+        drawNetwork();
+    }
+    
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    function selectAlgorithm(algo) {
+        currentAlgorithm = algo;
+        document.getElementById('algo-dijkstra').classList.remove('active');
+        document.getElementById('algo-astar').classList.remove('active');
+        document.getElementById('algo-bellman').classList.remove('active');
+        
+        if (algo === 'dijkstra') document.getElementById('algo-dijkstra').classList.add('active');
+        else if (algo === 'astar') document.getElementById('algo-astar').classList.add('active');
+        else document.getElementById('algo-bellman').classList.add('active');
+    }
+    
+    async function generateNetwork() {
+        const numNodes = document.getElementById('nodeCount').value;
+        const response = await fetch('/api/generate-network', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({num_nodes: parseInt(numNodes)})
+        });
+        const data = await response.json();
+        nodes = data.nodes;
+        edges = data.edges;
+        
+        const sourceSelect = document.getElementById('sourceNode');
+        const targetSelect = document.getElementById('targetNode');
+        sourceSelect.innerHTML = '';
+        targetSelect.innerHTML = '';
+        
+        nodes.forEach(node => {
+            const option = `<option value="${node.id}">Node ${node.id} (${node.is_ch ? 'CH' : 'Normal'})</option>`;
+            sourceSelect.innerHTML += option;
+            targetSelect.innerHTML += option;
+        });
+        
+        drawNetwork();
+        startRealTimeSimulation();
+    }
+    
+    function drawNetwork() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        edges.forEach(edge => {
+            const sourceNode = nodes.find(n => n.id === edge.source);
+            const targetNode = nodes.find(n => n.id === edge.target);
+            
+            if (sourceNode && targetNode) {
+                ctx.beginPath();
+                ctx.moveTo(sourceNode.x * canvas.width / 100, sourceNode.y * canvas.height / 100);
+                ctx.lineTo(targetNode.x * canvas.width / 100, targetNode.y * canvas.height / 100);
+                
+                const isInPath = currentPath.some((p, i) => 
+                    (p === edge.source && currentPath[i+1] === edge.target) ||
+                    (p === edge.target && currentPath[i+1] === edge.source)
+                );
+                
+                if (isInPath) {
+                    ctx.strokeStyle = '#FF6B35';
+                    ctx.lineWidth = 4;
+                    ctx.setLineDash([10, 5]);
+                } else {
+                    ctx.strokeStyle = '#CCCCCC';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([]);
+                }
+                
+                ctx.stroke();
+                
+                const midX = (sourceNode.x + targetNode.x) / 2 * canvas.width / 100;
+                const midY = (sourceNode.y + targetNode.y) / 2 * canvas.height / 100;
+                ctx.font = '10px Arial';
+                ctx.fillStyle = '#666';
+                ctx.fillText(`${edge.bandwidth} Mbps`, midX, midY - 5);
+            }
+        });
+        
+        nodes.forEach(node => {
+            const x = node.x * canvas.width / 100;
+            const y = node.y * canvas.height / 100;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, node.is_ch ? 15 : 10, 0, 2 * Math.PI);
+            
+            if (node.is_ch) {
+                ctx.fillStyle = '#FF6B35';
+                ctx.fill();
+                ctx.strokeStyle = '#E85D04';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#6C757D';
+                ctx.fill();
+            }
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText(node.id, x - 5, y + 4);
+            
+            ctx.font = '8px Arial';
+            ctx.fillStyle = '#333';
+            ctx.fillText(`${(node.efficiency * 100).toFixed(0)}%`, x - 12, y - 10);
+        });
+        
+        ctx.setLineDash([]);
+    }
+    
+    async function calculatePath() {
+        const source = parseInt(document.getElementById('sourceNode').value);
+        const target = parseInt(document.getElementById('targetNode').value);
+        
+        const response = await fetch('/api/shortest-path', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({nodes, edges, source, target, algorithm: currentAlgorithm})
+        });
+        
+        const data = await response.json();
+        
+        if (data.path) {
+            currentPath = data.path;
+            drawNetwork();
+            
+            document.getElementById('algorithmUsed').textContent = 
+                currentAlgorithm === 'dijkstra' ? "Dijkstra's Algorithm" :
+                currentAlgorithm === 'astar' ? "A* Algorithm" : "Bellman-Ford Algorithm";
+            document.getElementById('pathLength').textContent = data.length.toFixed(2);
+            document.getElementById('pathLatency').textContent = `${data.latency.toFixed(1)} ms`;
+            document.getElementById('pathBandwidth').textContent = `${data.bandwidth.toFixed(1)} Mbps`;
+            document.getElementById('pathHops').textContent = data.hops;
+        } else {
+            alert('No path found between selected nodes!');
+        }
+    }
+    
+    async function startRealTimeSimulation() {
+        if (animationInterval) clearInterval(animationInterval);
+        
+        animationInterval = setInterval(async () => {
+            const response = await fetch('/api/simulation-data');
+            const data = await response.json();
+            
+            document.getElementById('bandwidth').textContent = data.metrics.total_bandwidth;
+            document.getElementById('latency').textContent = data.metrics.avg_latency;
+            document.getElementById('activeFlows').textContent = data.metrics.active_flows;
+            document.getElementById('packetLoss').textContent = data.metrics.packet_loss;
+            
+            animateDataFlow();
+        }, 2000);
+    }
+    
+    function animateDataFlow() {
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        
+        edges.forEach(edge => {
+            const sourceNode = nodes.find(n => n.id === edge.source);
+            const targetNode = nodes.find(n => n.id === edge.target);
+            
+            if (sourceNode && targetNode && Math.random() > 0.7) {
+                const x1 = sourceNode.x * canvas.width / 100;
+                const y1 = sourceNode.y * canvas.height / 100;
+                const x2 = targetNode.x * canvas.width / 100;
+                const y2 = targetNode.y * canvas.height / 100;
+                
+                const t = (Date.now() / 1000) % 1;
+                const x = x1 + (x2 - x1) * t;
+                const y = y1 + (y2 - y1) * t;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fillStyle = '#FF6B35';
+                ctx.fill();
+            }
+        });
+        
+        ctx.restore();
+        requestAnimationFrame(() => drawNetwork());
+    }
+    
+    function resetSimulation() {
+        currentPath = [];
+        generateNetwork();
+    }
+    
+    document.getElementById('nodeCount').addEventListener('input', (e) => {
+        document.getElementById('nodeCountValue').textContent = e.target.value;
+        generateNetwork();
+    });
+    
+    selectAlgorithm('dijkstra');
+    generateNetwork();
+</script>
+{% endblock %}

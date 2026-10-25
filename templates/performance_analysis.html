@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .upload-area {
+        border: 2px dashed #FF6B35;
+        border-radius: 15px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #FFF8F0;
+    }
+    
+    .upload-area:hover {
+        background: #FFF0E0;
+        border-color: #E85D04;
+    }
+    
+    .comparison-card {
+        background: linear-gradient(135deg, #FFF5E6, #FFFFFF);
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .better-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .metric-compare {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 10px;
+    }
+    
+    .metric-value {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    
+    .improvement-indicator {
+        width: 100%;
+        height: 30px;
+        background: #e0e0e0;
+        border-radius: 15px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+    
+    .improvement-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #28a745, #FF6B35);
+        transition: width 1s ease;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 10px;
+        color: white;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-chart-line text-success me-2"></i>Performance Analysis</h2>
+            <p>Upload audio/video files to compare our ML-based resource allocation vs conventional methods</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="attack-card">
+                <h5><i class="fas fa-upload me-2"></i>Upload Media File</h5>
+                <hr>
+                
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt fa-4x mb-3" style="color: #FF6B35;"></i>
+                    <p>Click or drag to upload audio/video file</p>
+                    <small class="text-muted">Supported formats: MP3, WAV, OGG, MP4, AVI, MOV</small>
+                </div>
+                <input type="file" id="fileInput" style="display: none;" accept=".wav,.mp3,.ogg,.mp4,.avi,.mov,.mkv">
+                
+                <div id="fileInfo" style="display: none;" class="mt-3">
+                    <div class="alert alert-info">
+                        <i class="fas fa-file me-2"></i>
+                        Selected: <span id="fileName"></span>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary w-100 mt-3" onclick="analyzeMedia()" id="analyzeBtn" disabled>
+                    <i class="fas fa-chart-line me-2"></i>Analyze Performance
+                </button>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div id="loading" style="display: none;" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>Analyzing media file and predicting resource allocation...</p>
+            </div>
+            
+            <div id="results" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="attack-card">
+                <h5><i class="fas fa-info-circle me-2"></i>How It Works</h5>
+                <hr>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-microchip fa-3x mb-2" style="color: #FF6B35;"></i>
+                            <h6>1. Upload Media</h6>
+                            <p class="small">Upload any audio or video file</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-brain fa-3x mb-2" style="color: #FF6B35;"></i>
+                            <h6>2. ML Analysis</h6>
+                            <p class="small">Our model predicts optimal resource allocation</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-chart-line fa-3x mb-2" style="color: #FF6B35;"></i>
+                            <h6>3. Compare Results</h6>
+                            <p class="small">See improvement over conventional methods</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedFile = null;
+    
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        selectedFile = e.target.files[0];
+        if (selectedFile) {
+            document.getElementById('fileName').textContent = selectedFile.name;
+            document.getElementById('fileInfo').style.display = 'block';
+            document.getElementById('analyzeBtn').disabled = false;
+        }
+    });
+    
+    async function analyzeMedia() {
+        if (!selectedFile) {
+            alert('Please select a file first');
+            return;
+        }
+        
+        const loading = document.getElementById('loading');
+        const resultsDiv = document.getElementById('results');
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        
+        loading.style.display = 'block';
+        resultsDiv.style.display = 'none';
+        
+        try {
+            const response = await fetch('/api/analyze-media', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            setTimeout(() => {
+                loading.style.display = 'none';
+                
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error: ${result.error}
+                        </div>
+                    `;
+                    resultsDiv.style.display = 'block';
+                }
+            }, 1000);
+            
+        } catch (error) {
+            loading.style.display = 'none';
+            alert('Error analyzing file. Please try again.');
+            console.error('Analysis error:', error);
+        }
+    }
+    
+    function displayResults(result) {
+        const resultsDiv = document.getElementById('results');
+        const improvement = result.improvement_percentage;
+        const isBetter = result.is_better;
+        
+        resultsDiv.innerHTML = `
+            <div class="comparison-card">
+                <h5><i class="fas fa-chart-bar me-2"></i>Analysis Results for: ${result.file_name}</h5>
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="metric-compare" style="background: #E8F5E9;">
+                            <div>
+                                <i class="fas fa-microchip me-2"></i>
+                                <strong>File Details</strong>
+                            </div>
+                        </div>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>File Type:</td>
+                                <td><strong>${result.file_type.toUpperCase()}</strong></td>
+                            </tr>
+                            <tr>
+                                <td>File Size:</td>
+                                <td><strong>${result.file_size_mb} MB</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Duration:</td>
+                                <td><strong>${result.duration_sec} seconds</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Required Bandwidth:</td>
+                                <td><strong>${result.required_bandwidth_mbps} Mbps</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="metric-compare" style="background: #FFF3E0;">
+                            <div>
+                                <i class="fas fa-chart-line me-2"></i>
+                                <strong>Performance Comparison</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label>Conventional Method Resource Usage</label>
+                            <div class="progress">
+                                <div class="progress-bar bg-secondary" style="width: ${result.conventional_resource_allocation}%">
+                                    ${result.conventional_resource_allocation}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label>Our ML Model Resource Usage</label>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: ${result.predicted_resource_allocation}%; background: linear-gradient(90deg, #FF6B35, #FFB347);">
+                                    ${result.predicted_resource_allocation}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="improvement-indicator mt-3">
+                            <div class="improvement-fill" style="width: ${Math.abs(improvement)}%">
+                                ${improvement > 0 ? '+' : ''}${improvement}%
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            ${isBetter ? 
+                                `<div class="better-badge" style="background: #28a745; color: white;">
+                                    <i class="fas fa-trophy me-2"></i>Our Model is ${Math.abs(improvement)}% Better!
+                                </div>` :
+                                `<div class="better-badge" style="background: #dc3545; color: white;">
+                                    <i class="fas fa-info-circle me-2"></i>Conventional Method is Better
+                                </div>`
+                            }
+                            <p class="mt-2">${result.recommendation}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-success mt-3">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Conclusion:</strong> Our ML-based resource allocation model ${isBetter ? 'outperforms' : 'is comparable to'} 
+                    conventional methods with a ${Math.abs(improvement)}% ${isBetter ? 'improvement' : 'difference'} in resource efficiency.
+                </div>
+            </div>
+        `;
+        
+        resultsDiv.style.display = 'block';
+        resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+</script>
+{% endblock %}
