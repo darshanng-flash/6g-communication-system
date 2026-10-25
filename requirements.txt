@@ -1,0 +1,11 @@
+
+Flask
+numpy==1.23.5
+pandas
+joblib
+networkx
+plotly
+matplotlib
+seaborn
+scikit-learn==1.0.2
+opencv-python-headless==4.7.0.72
